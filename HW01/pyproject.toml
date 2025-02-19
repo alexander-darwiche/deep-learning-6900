@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.12"
 torchvision = "^0.21.0"
 matplotlib = "^3.10.0"
+prettytable = "^3.14.0"
 
 
 [build-system]

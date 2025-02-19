@@ -52,7 +52,7 @@ class net(nn.Module):
         return x
 
 # ------ maybe some helper functions -----------
-def test_accuracy(epoch, step):
+def test_accuracy():
     model.eval()  # switch the model to evaluation mode
     correct = 0
     total = 0
@@ -64,7 +64,6 @@ def test_accuracy(epoch, step):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    print('Test set: Epoch[{}]:Step[{}] Accuracy: {}%'.format(epoch, step, 100 * correct // total))
     return (100 * correct // total)
 
 
@@ -106,7 +105,8 @@ if 'train' in sys.argv[1:]:
     optimizer = optim.SGD(model.parameters(), lr = .001, momentum = .9)
     epochs = 10
 
-
+    results = {"Epoch", "Step", "Train_Loss","Train_Acc","Test_Loss","Test_Acc"}
+        
     for epoch in range(epochs):
         total_loss = 0
         
@@ -126,8 +126,9 @@ if 'train' in sys.argv[1:]:
                 total = 0
                 total += target.size(0)
                 correct += (predicted == target).sum().item()
-                print('Train set: Epoch[{}]:Step[{}] Accuracy: {}%'.format(epoch, step, 100 * correct // total))
-
+                train_acc =  100 * correct // total
+                
+            
                 save_model(test_acc)
 
 elif 'test' in sys.argv[1:]:
@@ -148,11 +149,6 @@ elif 'test' in sys.argv[1:]:
     # Apply transformations
     image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
 
-    # Show the image (before normalization)
-    plt.imshow(image)
-    plt.title("Input Image")
-    plt.show()
-
     model = load_model()
 
     # Run inference
@@ -167,7 +163,7 @@ elif 'test' in sys.argv[1:]:
         5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
     }
 
-    print(f"Predicted class: {labels_map[predicted_class]}")
+    print(f"prediction result: {labels_map[predicted_class]}")
 
 elif 'load_pic' in sys.argv[1:]:
     
@@ -192,14 +188,17 @@ elif 'load_pic' in sys.argv[1:]:
     transform = transforms.Compose([transforms.ToTensor()])
 
     # Save first 5 images as PNG
-    for i in range(5):  
+    for i in range(10):  
         image_tensor, label = test_data[i]  # Get image tensor
         image_tensor = denormalize(image_tensor, mean, std)  # Denormalize
         
         # Convert tensor to PIL image
         image_pil = transforms.ToPILImage()(image_tensor)
         
+        # CIFAR-10 Class Labels
+        labels_map = {
+            0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer', 
+            5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
+        }
         # Save as PNG
-        image_pil.save(f"cifar10_image_{i}.png")
-
-        print(f"Saved cifar10_image_{i}.png")
+        image_pil.save(f"cifar10_{labels_map[label]}_{i}.png")
