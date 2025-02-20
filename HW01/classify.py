@@ -9,12 +9,20 @@ import torch.utils.data as Data
 import torchvision
 import torch.optim as optim
 import os
+from PIL import Image
+import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
 
+transform = transforms.Compose([
+        transforms.Resize((32, 32)),  # Resize image to 32x32
+        transforms.ToTensor(),        # Convert image to tensor
+        transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])  # CIFAR-10 normalization
+    ])
 # ----------------- prepare training data -----------------------
 train_data = torchvision.datasets.CIFAR10(
     root='./data.cifar10',                          # location of the dataset
     train=True,                                     # this is training data
-    transform=torchvision.transforms.ToTensor(),    # Converts a PIL.Image or numpy.ndarray to torch.FloatTensor of shape (C x H x W)
+    transform=transform,    # Converts a PIL.Image or numpy.ndarray to torch.FloatTensor of shape (C x H x W)
     download=True                                   # if you haven't had the dataset, this will automatically download it for you
 )
 
@@ -23,7 +31,7 @@ batch_size = 128
 train_loader = Data.DataLoader(dataset=train_data, batch_size = batch_size, shuffle=True)
 
 # ----------------- prepare testing data -----------------------
-test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=torchvision.transforms.ToTensor())
+test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=transform)
 
 test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuffle=True )
 
@@ -58,13 +66,14 @@ def test_accuracy():
     total = 0
     with torch.no_grad():
         for data in test_loader:
-            images, labels = data
+            images, target = data
             outputs = model(images)
+            loss = loss_func(outputs,target)
             _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
 
-    return (100 * correct // total)
+    return [(100 * correct / total),loss.item()]
 
 
 
@@ -75,7 +84,6 @@ def save_model(test_accuracy):
     if os.path.exists(model_path):
         model2 = torch.load(model_path)
         if model2['test_accuracy'] < test_accuracy:
-            print('Model Updated')
             os.remove(model_path)
             torch.save({
                 'model_state_dict': model.state_dict(),
@@ -98,43 +106,47 @@ def test():
 
 
 import sys
+import pandas as pd
 
 if 'train' in sys.argv[1:]:
     model = net()
     loss_func = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr = .001, momentum = .9)
+    optimizer = optim.SGD(model.parameters(), lr = .001, momentum = .9, weight_decay=0.05)
     epochs = 10
+    
+    results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
+    print(" | ".join("{:<10}".format(col) for col in results.columns.to_list()))
 
-    results = {"Epoch", "Step", "Train_Loss","Train_Acc","Test_Loss","Test_Acc"}
-        
     for epoch in range(epochs):
-        total_loss = 0
-        
+
         for step, (input, target) in enumerate(train_loader):
+            train_loss = 0
             model.train()   # set the model in training mode
             optimizer.zero_grad() # Set all gradients back to 0
             output = model(input) # Forward pass through the model
             loss = loss_func(output,target) # Evaluate the loss/difference from ground truth
             loss.backward() # Calculate gradients to back propogate
             optimizer.step() # Back-propogate the losses
-            total_loss += loss.item() # Accumulate losses
+            train_loss += loss.item() # Accumulate losses
             _, predicted = output.max(1)
 
-            if step % 50 == 0:
-                test_acc = test_accuracy(epoch, step)
+            if step == 0:
+                test_acc, test_loss = test_accuracy()
                 correct = 0
                 total = 0
                 total += target.size(0)
                 correct += (predicted == target).sum().item()
-                train_acc =  100 * correct // total
+                train_acc =  100 * correct / total
                 
-            
+                new_row = pd.DataFrame([{"Epoch": epoch, "Step": step, "Train_Loss": round(train_loss, 2), "Train_Acc": round(train_acc, 2), "Test_Loss": round(test_loss, 2), "Test_Acc": round(test_acc, 2)}])
+                results = pd.concat([results,new_row], ignore_index=True)
+
+                print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1].values))
+
                 save_model(test_acc)
 
-elif 'test' in sys.argv[1:]:
-    from PIL import Image
-    import torchvision.transforms as transforms
-    import matplotlib.pyplot as plt
+elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
+    
 
     transform = transforms.Compose([
         transforms.Resize((32, 32)),  # Resize image to 32x32
@@ -165,40 +177,40 @@ elif 'test' in sys.argv[1:]:
 
     print(f"prediction result: {labels_map[predicted_class]}")
 
-elif 'load_pic' in sys.argv[1:]:
+# elif 'load_pic' in sys.argv[1:]:
     
-    import matplotlib.pyplot as plt
-    image_tensor, label = test_data[1] 
+#     import matplotlib.pyplot as plt
+#     image_tensor, label = test_data[1] 
 
-    # Define normalization values used for CIFAR-10
-    mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
-    std = torch.tensor([0.2470, 0.2435, 0.2616]).view(3, 1, 1)
+#     # Define normalization values used for CIFAR-10
+#     mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
+#     std = torch.tensor([0.2470, 0.2435, 0.2616]).view(3, 1, 1)
 
-    # Denormalize if necessary
-    def denormalize(tensor, mean, std):
-        return tensor * std + mean  # Reverse normalization
+#     # Denormalize if necessary
+#     def denormalize(tensor, mean, std):
+#         return tensor * std + mean  # Reverse normalization
 
-    # Plot image
-    # plt.imshow(denormalize(image_tensor, mean, std).permute(1, 2, 0))
-    # plt.title("Input Image")
-    # plt.show()
+#     # Plot image
+#     # plt.imshow(denormalize(image_tensor, mean, std).permute(1, 2, 0))
+#     # plt.title("Input Image")
+#     # plt.show()
 
-    import torchvision.transforms as transforms
+#     import torchvision.transforms as transforms
 
-    transform = transforms.Compose([transforms.ToTensor()])
+#     transform = transforms.Compose([transforms.ToTensor()])
 
-    # Save first 5 images as PNG
-    for i in range(10):  
-        image_tensor, label = test_data[i]  # Get image tensor
-        image_tensor = denormalize(image_tensor, mean, std)  # Denormalize
+#     # Save first 5 images as PNG
+#     for i in range(10):  
+#         image_tensor, label = test_data[i]  # Get image tensor
+#         image_tensor = denormalize(image_tensor, mean, std)  # Denormalize
         
-        # Convert tensor to PIL image
-        image_pil = transforms.ToPILImage()(image_tensor)
+#         # Convert tensor to PIL image
+#         image_pil = transforms.ToPILImage()(image_tensor)
         
-        # CIFAR-10 Class Labels
-        labels_map = {
-            0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer', 
-            5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
-        }
-        # Save as PNG
-        image_pil.save(f"cifar10_{labels_map[label]}_{i}.png")
+#         # CIFAR-10 Class Labels
+#         labels_map = {
+#             0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer', 
+#             5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
+#         }
+#         # Save as PNG
+#         image_pil.save(f"cifar10_{labels_map[label]}_{i}.png")

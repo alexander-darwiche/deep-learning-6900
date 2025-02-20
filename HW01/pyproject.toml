@@ -2,7 +2,7 @@
 name = "hw01"
 version = "0.1.0"
 description = ""
-authors = ["padrejoe <59787022+alexander-darwiche@users.noreply.github.com>"]
+authors = ["alex darwiche <59787022+alexander-darwiche@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -10,6 +10,7 @@ python = "^3.12"
 torchvision = "^0.21.0"
 matplotlib = "^3.10.0"
 prettytable = "^3.14.0"
+pandas = "^2.2.3"
 
 
 [build-system]
