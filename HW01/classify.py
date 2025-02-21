@@ -12,7 +12,11 @@ import os
 from PIL import Image
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import sys
+import pandas as pd
 
+
+# Normalize the CIFAR10 Dataset (from Pytorch Website)
 transform = transforms.Compose([
         transforms.Resize((32, 32)),  # Resize image to 32x32
         transforms.ToTensor(),        # Convert image to tensor
@@ -26,16 +30,21 @@ train_data = torchvision.datasets.CIFAR10(
     download=True                                   # if you haven't had the dataset, this will automatically download it for you
 )
 
+# Define a batch size to set with, using 128
 batch_size = 128
 
+# Load the training data from the dataset, breaking it into batches
 train_loader = Data.DataLoader(dataset=train_data, batch_size = batch_size, shuffle=True)
 
 # ----------------- prepare testing data -----------------------
 test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=transform)
 
+# Load the training data from the dataset, breaking it into batches
 test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuffle=True )
 
 # ----------------- build the model ------------------------
+
+# Define a Deep Nueral Network with only Fully Connected Layers or Batch Normalization
 class net(nn.Module):
     def __init__(self):
         super(net, self).__init__()
@@ -47,7 +56,7 @@ class net(nn.Module):
         self.bn1 = nn.BatchNorm1d(2000)
         self.bn2 = nn.BatchNorm1d(100)
 
-
+    # Define a forward pass through the model
     def forward(self, x):
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
@@ -61,59 +70,74 @@ class net(nn.Module):
 
 # ------ maybe some helper functions -----------
 def test_accuracy():
+    '''
+    This function will return the accuracy of the model
+    on the testing data.
+    
+    '''
     model.eval()  # switch the model to evaluation mode
     correct = 0
     total = 0
     with torch.no_grad():
         for data in test_loader:
-            images, target = data
-            outputs = model(images)
-            loss = loss_func(outputs,target)
-            _, predicted = torch.max(outputs, 1)
-            total += target.size(0)
-            correct += (predicted == target).sum().item()
-
+            images, target = data # split data into images/target
+            outputs = model(images) # Determine the "prediction" or "output" from the model based on the images
+            loss = loss_func(outputs,target) # Find the loss (difference between ground truth and prediction)
+            _, predicted = torch.max(outputs, 1) # Determine the most likely label for the image
+            total += target.size(0) # Find the amount of total images in batch
+            correct += (predicted == target).sum().item() # Find the total images that are correctly labeled
+    # Return Accuracy and Loss
     return [(100 * correct / total),loss.item()]
 
 
 
 def save_model(test_accuracy):
+    '''
+    This function will save the model in the event that it exceeds
+    a previous model's test accuracy, or if a model does not exist.
 
-    model_path = "./model/model.pt"
+    '''
 
+    model_path = "./model/model.pt" # Where to save model and what to name it.
+
+    # Determine if a model already exists, save model if not
     if os.path.exists(model_path):
-        model2 = torch.load(model_path)
-        if model2['test_accuracy'] < test_accuracy:
-            os.remove(model_path)
-            torch.save({
+        model2 = torch.load(model_path) # Load the model from the save. This isn't exactly the "load_state_dict" as I added test_accuracy to the model save
+        if model2['test_accuracy'] < test_accuracy: # If the "new model" has better test accuracy, then continue
+            os.remove(model_path) # Remove the old model
+            torch.save({ # save the new model parameters AND its test accuracy
                 'model_state_dict': model.state_dict(),
                 'test_accuracy': test_accuracy
             }, model_path)
     else:
-        torch.save({
+        torch.save({ # save the new model parameters AND its test accuracy
             'model_state_dict': model.state_dict(),
             'test_accuracy': test_accuracy
         }, model_path)
 
 def load_model():
+    '''
+    This function loads the model_state_dict or model state dictionary from the saved
+    model.
+
+    '''
     model = net()
     model.load_state_dict(torch.load("./model/model.pt")['model_state_dict'])
     return model
 
-def test():
-    print('hi')
 
 
 
-import sys
-import pandas as pd
-
+# This if statement dictates the interactions depending on the arugments passed to command line.
+# IF 'Train', train the model.
+# IF 'Test' or 'Predict', try to predict the command line image's class
 if 'train' in sys.argv[1:]:
     model = net()
     loss_func = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr = .001, momentum = .9, weight_decay=0.05)
     epochs = 10
     
+    # Print the Columns for the results table
     results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
     print(" | ".join("{:<10}".format(col) for col in results.columns.to_list()))
 
@@ -131,23 +155,27 @@ if 'train' in sys.argv[1:]:
             _, predicted = output.max(1)
 
             if step == 0:
-                test_acc, test_loss = test_accuracy()
-                correct = 0
+                test_acc, test_loss = test_accuracy() # Get test accuracy and loss
+                correct = 0 
                 total = 0
                 total += target.size(0)
-                correct += (predicted == target).sum().item()
+                correct += (predicted == target).sum().item() # Calculate train accuracy and loss, exactly as done for test, just on the training data.
                 train_acc =  100 * correct / total
                 
+                # Create the new row of Results Dataframe
                 new_row = pd.DataFrame([{"Epoch": epoch, "Step": step, "Train_Loss": round(train_loss, 2), "Train_Acc": round(train_acc, 2), "Test_Loss": round(test_loss, 2), "Test_Acc": round(test_acc, 2)}])
                 results = pd.concat([results,new_row], ignore_index=True)
 
+                # Print the new row of data from the first step of the new epoch
                 print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1].values))
 
+                # Attempt to save model if needed
                 save_model(test_acc)
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
-
+    # Need to "normalize" the picture that is being input, ensuring its the correct size
+    # and the channels are normalized based on mean/std.
     transform = transforms.Compose([
         transforms.Resize((32, 32)),  # Resize image to 32x32
         transforms.ToTensor(),        # Convert image to tensor
@@ -176,41 +204,3 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     }
 
     print(f"prediction result: {labels_map[predicted_class]}")
-
-# elif 'load_pic' in sys.argv[1:]:
-    
-#     import matplotlib.pyplot as plt
-#     image_tensor, label = test_data[1] 
-
-#     # Define normalization values used for CIFAR-10
-#     mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
-#     std = torch.tensor([0.2470, 0.2435, 0.2616]).view(3, 1, 1)
-
-#     # Denormalize if necessary
-#     def denormalize(tensor, mean, std):
-#         return tensor * std + mean  # Reverse normalization
-
-#     # Plot image
-#     # plt.imshow(denormalize(image_tensor, mean, std).permute(1, 2, 0))
-#     # plt.title("Input Image")
-#     # plt.show()
-
-#     import torchvision.transforms as transforms
-
-#     transform = transforms.Compose([transforms.ToTensor()])
-
-#     # Save first 5 images as PNG
-#     for i in range(10):  
-#         image_tensor, label = test_data[i]  # Get image tensor
-#         image_tensor = denormalize(image_tensor, mean, std)  # Denormalize
-        
-#         # Convert tensor to PIL image
-#         image_pil = transforms.ToPILImage()(image_tensor)
-        
-#         # CIFAR-10 Class Labels
-#         labels_map = {
-#             0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer', 
-#             5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
-#         }
-#         # Save as PNG
-#         image_pil.save(f"cifar10_{labels_map[label]}_{i}.png")
