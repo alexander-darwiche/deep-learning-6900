@@ -67,25 +67,43 @@ class net(nn.Module):
         return x
 
 # ------ maybe some helper functions -----------
-def test_accuracy():
+def test_accuracy(model, test_loader, loss_func, device='cpu'):
     '''
     This function will return the accuracy of the model
     on the testing data.
     
+    Args:
+        model: The trained PyTorch model.
+        test_loader: DataLoader for the testing dataset.
+        loss_func: Loss function used for evaluation.
+        device: The device to run the model on ('cpu' or 'cuda').
+
+    Returns:
+        Tuple: (test accuracy %, test loss)
     '''
-    model.eval()  # switch the model to evaluation mode
+    model.eval()  # Switch the model to evaluation mode
     correct = 0
     total = 0
-    with torch.no_grad():
-        for data in test_loader:
-            images, target = data # split data into images/target
-            outputs = model(images) # Determine the "prediction" or "output" from the model based on the images
-            loss = loss_func(outputs,target) # Find the loss (difference between ground truth and prediction)
-            _, predicted = torch.max(outputs, 1) # Determine the most likely label for the image
-            total += target.size(0) # Find the amount of total images in batch
-            correct += (predicted == target).sum().item() # Find the total images that are correctly labeled
-    # Return Accuracy and Loss
-    return [(100 * correct / total),loss.item()]
+    total_loss = 0  # Initialize total loss
+    
+    with torch.no_grad():  # Disable gradient computation for inference
+        for images, target in test_loader:
+            # Move data to the correct device
+            images, target = images.to(device), target.to(device)
+            
+            outputs = model(images)  # Forward pass through the model
+            loss = loss_func(outputs, target)  # Compute the loss
+            
+            total_loss += loss.item() * target.size(0)  # Accumulate the weighted loss
+            _, predicted = outputs.max(1)  # Get predicted class (the one with highest probability)
+            total += target.size(0)  # Accumulate the total number of samples
+            correct += (predicted == target).sum().item()  # Count correct predictions
+    
+    # Compute final accuracy and average loss
+    accuracy = 100 * correct / total
+    avg_loss = total_loss / total  # Average loss over all samples
+
+    return accuracy, avg_loss
 
 
 
@@ -124,50 +142,103 @@ def load_model():
     return model
 
 
+def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
+    """
+    Computes the accuracy and average loss of the model on the training dataset.
+    
+    Args:
+        model: The trained PyTorch model.
+        train_loader: DataLoader for the training dataset.
+        loss_func: Loss function used for evaluation.
+        device: 'cpu' or 'cuda' depending on available hardware.
+    
+    Returns:
+        Tuple: (accuracy %, average loss)
+    """
+    model.train()  # Set model to training mode
+    correct = 0
+    total = 0
+    total_loss = 0  # Track cumulative loss
+    
+    with torch.no_grad():  # Disable gradient computation
+        for images, target in train_loader:
+            images, target = images.to(device), target.to(device)  # Move to device
+            
+            outputs = model(images)  # Forward pass
+            loss = loss_func(outputs, target)  # Compute batch loss
+            total_loss += loss.item() * target.size(0)  # Accumulate weighted loss
+            
+            _, predicted = outputs.max(1)  # Get predicted class
+            total += target.size(0)  # Update total count
+            correct += (predicted == target).sum().item()  # Count correct predictions
+    
+    # Compute final accuracy and average loss
+    accuracy = 100 * correct / total
+    avg_loss = total_loss / total  # Average loss over all samples
+    
+    return accuracy, avg_loss
 
 
 # This if statement dictates the interactions depending on the arugments passed to command line.
 # IF 'Train', train the model.
 # IF 'Test' or 'Predict', try to predict the command line image's class
 if 'train' in sys.argv[1:]:
-    model = net()
+    # Check if CUDA is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Initialize model, loss function, and optimizer, and move model to the device
+    model = net().to(device)  
     loss_func = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr = .001, momentum = .9, weight_decay=0.05)
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.05)
     epochs = 10
     
-    # Print the Columns for the results table
+    # Create an empty dataframe for results
     results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
     print(" | ".join("{:<10}".format(col) for col in results.columns.to_list()))
 
+    # Training loop
     for epoch in range(epochs):
-
+        train_loss = 0
+        correct = 0
+        total = 0
+        
         for step, (input, target) in enumerate(train_loader):
-            train_loss = 0
-            model.train()   # set the model in training mode
-            optimizer.zero_grad() # Set all gradients back to 0
-            output = model(input) # Forward pass through the model
-            loss = loss_func(output,target) # Evaluate the loss/difference from ground truth
-            loss.backward() # Calculate gradients to back propogate
-            optimizer.step() # Back-propogate the losses
-            train_loss += loss.item() # Accumulate losses
-            _, predicted = output.max(1)
-
+            input, target = input.to(device), target.to(device)  # Move data to the device
+            model.train()  # Set model in training mode
+            optimizer.zero_grad()  # Reset gradients
+            output = model(input)  # Forward pass
+            loss = loss_func(output, target)  # Compute loss
+            loss.backward()  # Backpropagate gradients
+            optimizer.step()  # Update weights
+            
+            train_loss += loss.item() * target.size(0)  # Accumulate weighted loss
+            _, predicted = output.max(1)  # Get predicted class
+            total += target.size(0)
+            correct += (predicted == target).sum().item()  # Count correct predictions
+            
             if step == 0:
-                test_acc, test_loss = test_accuracy() # Get test accuracy and loss
-                correct = 0 
-                total = 0
-                total += target.size(0)
-                correct += (predicted == target).sum().item() # Calculate train accuracy and loss, exactly as done for test, just on the training data.
-                train_acc =  100 * correct / total
+                # Get test accuracy and loss (ensure model is in eval mode for testing)
+                test_acc, test_loss = test_accuracy(model, test_loader, loss_func, device)
                 
-                # Create the new row of Results Dataframe
-                new_row = pd.DataFrame([{"Epoch": epoch, "Step": step, "Train_Loss": round(train_loss, 2), "Train_Acc": round(train_acc, 2), "Test_Loss": round(test_loss, 2), "Test_Acc": round(test_acc, 2)}])
-                results = pd.concat([results,new_row], ignore_index=True)
+                # Compute training accuracy (after the epoch) and loss
+                train_acc = 100 * correct / total
+                avg_train_loss = train_loss / total
 
-                # Print the new row of data from the first step of the new epoch
-                print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1].values))
+                # Create a new row in the results dataframe
+                new_row = pd.DataFrame([{
+                    "Epoch": epoch, 
+                    "Step": step, 
+                    "Train_Loss": round(avg_train_loss, 2),
+                    "Train_Acc": round(train_acc, 2), 
+                    "Test_Loss": round(test_loss, 2), 
+                    "Test_Acc": round(test_acc, 2)
+                }])
+                results = pd.concat([results, new_row], ignore_index=True)
 
-                # Attempt to save model if needed
+                # Print the results from the first step of the new epoch
+                print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1].values()))
+
+                # Optionally save the model
                 save_model(test_acc)
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
