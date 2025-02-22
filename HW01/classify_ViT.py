@@ -74,6 +74,10 @@ test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 # Initialize model, loss function, and optimizer
 model = ViT(num_classes=10)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import torch_directml
+
+# Set the device to DirectML
+device = torch_directml.device()
 model.to(device)
 
 loss_func = nn.CrossEntropyLoss()

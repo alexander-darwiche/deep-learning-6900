@@ -207,6 +207,10 @@ def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
 if 'train' in sys.argv[1:]:
     # Check if CUDA is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    import torch_directml
+
+    # Set the device to DirectML
+    device = torch_directml.device()
     
     # Initialize model, loss function, and optimizer, and move model to the device
     model = net().to(device)  
