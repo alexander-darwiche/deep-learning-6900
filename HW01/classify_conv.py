@@ -211,7 +211,8 @@ if 'train' in sys.argv[1:]:
     # Initialize model, loss function, and optimizer, and move model to the device
     model = net().to(device)  
     loss_func = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
+    #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
     epochs = 10
     
     # Create an empty dataframe for results
