@@ -48,22 +48,33 @@ test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuff
 class net(nn.Module):
     def __init__(self):
         super(net, self).__init__()
-        self.fc1 = nn.Linear(15680,2000)
-        self.fc2 = nn.Linear(2000,10)
-        self.bn1 = nn.LayerNorm(2000)
-        self.bn2 = nn.LayerNorm(10)
-        self.bn3 = nn.BatchNorm2d(10)
-        self.bn4 = nn.BatchNorm2d(20)
-        self.conv1 = nn.Conv2d(in_channels = 3, out_channels = 10, kernel_size = 3)
-        self.conv2 = nn.Conv2d(in_channels = 10, out_channels = 20, kernel_size = 3)
+        # Convolutional Layers
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)  # Reduced number of filters
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)  # Reduced number of filters
+        self.bn1 = nn.BatchNorm2d(16)
+        self.bn2 = nn.BatchNorm2d(32)
+        
+        # Fully Connected Layers
+        self.fc1 = nn.Linear(8192, 1000)  # Adjust based on input image size after convolutional layers
+        self.fc2 = nn.Linear(1000, 10)
 
-    # Define a forward pass through the model
+        # Dropout Layers
+        self.dropout = nn.Dropout(p=0.5)  # Randomly drop 50% of the neurons
+
     def forward(self, x):
-        x = F.relu(self.bn3(self.conv1(x)))
-        x = F.relu(self.bn4(self.conv2(x)))
-        x = torch.flatten(x, 1)  # Flatten before entering FC layers
-        x = F.relu(self.bn1(self.fc1(x)))
-        x = self.bn2(self.fc2(x))
+        # Convolutional Layers with Batch Normalization and ReLU activation
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.max_pool2d(x, 2)  # Add max-pooling after convolutions to reduce spatial size
+        
+        # Flatten before passing to fully connected layers
+        x = torch.flatten(x, 1)  # Flatten the output from conv layers into a vector
+
+        # Fully Connected Layers with Batch Normalization, ReLU, and Dropout
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)  # Apply dropout
+        x = self.fc2(x)  # Final output layer (no activation here, typically for classification)
+        
         return x
 
 # ------ maybe some helper functions -----------
