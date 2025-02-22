@@ -48,7 +48,7 @@ batch_size = 128
 train_loader = Data.DataLoader(dataset=train_data, batch_size = batch_size, shuffle=True)
 
 # ----------------- prepare testing data -----------------------
-test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=train_transform)
+test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=transform)
 
 # Load the training data from the dataset, breaking it into batches
 test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuffle=True )
@@ -70,7 +70,7 @@ class net(nn.Module):
         self.fc2 = nn.Linear(1000, 10)
 
         # Dropout Layers
-        self.dropout = nn.Dropout(p=0.3)  # Randomly drop 50% of the neurons
+        self.dropout = nn.Dropout(p=0.1)  # Randomly drop 50% of the neurons
 
     def forward(self, x):
         # Convolutional Layers with Batch Normalization and ReLU activation
