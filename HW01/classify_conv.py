@@ -59,7 +59,7 @@ class net(nn.Module):
         self.fc2 = nn.Linear(1000, 10)
 
         # Dropout Layers
-        self.dropout = nn.Dropout(p=0.5)  # Randomly drop 50% of the neurons
+        self.dropout = nn.Dropout(p=0.3)  # Randomly drop 50% of the neurons
 
     def forward(self, x):
         # Convolutional Layers with Batch Normalization and ReLU activation
