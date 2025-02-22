@@ -30,7 +30,7 @@ train_transform = transforms.Compose([
     transforms.RandomRotation(10),  # Random rotation by 10 degrees
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),  # Random color jitter
     transforms.ToTensor(),  # Convert image to tensor
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with standard ImageNet values
+    transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])  # Normalize with standard ImageNet values
 ])
 
 # ----------------- prepare training data -----------------------
@@ -48,7 +48,7 @@ batch_size = 128
 train_loader = Data.DataLoader(dataset=train_data, batch_size = batch_size, shuffle=True)
 
 # ----------------- prepare testing data -----------------------
-test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=transform)
+test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, transform=train_transform)
 
 # Load the training data from the dataset, breaking it into batches
 test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuffle=True )
@@ -211,7 +211,7 @@ if 'train' in sys.argv[1:]:
     # Initialize model, loss function, and optimizer, and move model to the device
     model = net().to(device)  
     loss_func = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.05)
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
     epochs = 10
     
     # Create an empty dataframe for results
