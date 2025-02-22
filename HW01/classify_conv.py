@@ -236,7 +236,8 @@ if 'train' in sys.argv[1:]:
                 results = pd.concat([results, new_row], ignore_index=True)
 
                 # Print the results from the first step of the new epoch
-                print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1].values()))
+                print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1]))
+
 
                 # Optionally save the model
                 save_model(test_acc)
