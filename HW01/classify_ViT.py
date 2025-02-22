@@ -26,7 +26,7 @@ class PatchEmbedding(nn.Module):
 
 # Vision Transformer (ViT-H) Model
 class ViT(nn.Module):
-    def __init__(self, num_classes=10, patch_size=4, emb_dim=512, num_heads=12, num_layers=12, dropout=0.1):
+    def __init__(self, num_classes=10, patch_size=4, emb_dim=480, num_heads=12, num_layers=12, dropout=0.1):
         super(ViT, self).__init__()
         
         self.patch_embedding = PatchEmbedding(in_channels=3, patch_size=patch_size, emb_dim=emb_dim)
