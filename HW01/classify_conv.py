@@ -49,12 +49,9 @@ class net(nn.Module):
     def __init__(self):
         super(net, self).__init__()
         self.fc1 = nn.Linear(15680,2000)
-        self.fc2 = nn.Linear(2000,1000)
-        self.fc3 = nn.Linear(1000,500)
-        self.fc4 = nn.Linear(500,100)
-        self.fc5 = nn.Linear(100,10)
-        self.bn1 = nn.BatchNorm1d(2000)
-        self.bn2 = nn.BatchNorm1d(100)
+        self.fc2 = nn.Linear(2000,10)
+        self.bn1 = nn.LayerNorm(2000)
+        self.bn2 = nn.LayerNorm(10)
         self.bn3 = nn.BatchNorm2d(10)
         self.bn4 = nn.BatchNorm2d(20)
         self.conv1 = nn.Conv2d(in_channels = 3, out_channels = 10, kernel_size = 3)
@@ -62,18 +59,11 @@ class net(nn.Module):
 
     # Define a forward pass through the model
     def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = self.bn3(x)
-        x = F.relu(self.conv2(x))
-        x = self.bn4(x)
-        x = torch.flatten(x, 1)
-        x = F.relu(self.fc1(x))
-        x = self.bn1(x)
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = self.bn2(x)
-        x = self.fc5(x)
+        x = F.relu(self.bn3(self.conv1(x)))
+        x = F.relu(self.bn4(self.conv2(x)))
+        x = torch.flatten(x, 1)  # Flatten before entering FC layers
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = self.bn2(self.fc2(x))
         return x
 
 # ------ maybe some helper functions -----------
