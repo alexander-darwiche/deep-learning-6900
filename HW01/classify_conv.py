@@ -22,11 +22,22 @@ transform = transforms.Compose([
         transforms.ToTensor(),        # Convert image to tensor
         transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])  # CIFAR-10 normalization
     ])
+
+# Define the data augmentation transformations
+train_transform = transforms.Compose([
+    transforms.RandomResizedCrop(32, scale=(0.8, 1.0)),  # Random crop and resize
+    transforms.RandomHorizontalFlip(),  # Random horizontal flip
+    transforms.RandomRotation(10),  # Random rotation by 10 degrees
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),  # Random color jitter
+    transforms.ToTensor(),  # Convert image to tensor
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with standard ImageNet values
+])
+
 # ----------------- prepare training data -----------------------
 train_data = torchvision.datasets.CIFAR10(
     root='./data.cifar10',                          # location of the dataset
     train=True,                                     # this is training data
-    transform=transform,    # Converts a PIL.Image or numpy.ndarray to torch.FloatTensor of shape (C x H x W)
+    transform=train_transform,    # Converts a PIL.Image or numpy.ndarray to torch.FloatTensor of shape (C x H x W)
     download=True                                   # if you haven't had the dataset, this will automatically download it for you
 )
 
