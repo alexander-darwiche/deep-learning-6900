@@ -55,13 +55,17 @@ class net(nn.Module):
         self.fc5 = nn.Linear(100,10)
         self.bn1 = nn.BatchNorm1d(2000)
         self.bn2 = nn.BatchNorm1d(100)
+        self.bn3 = nn.BatchNorm1d(10)
+        self.bn4 = nn.BatchNorm1d(20)
         self.conv1 = nn.Conv2d(in_channels = 3, out_channels = 10, kernel_size = 3)
         self.conv2 = nn.Conv2d(in_channels = 10, out_channels = 20, kernel_size = 3)
 
     # Define a forward pass through the model
     def forward(self, x):
         x = F.relu(self.conv1(x))
+        x = self.bn3(x)
         x = F.relu(self.conv2(x))
+        x = self.bn4(x)
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = self.bn1(x)
