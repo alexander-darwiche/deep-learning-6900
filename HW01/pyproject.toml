@@ -7,11 +7,18 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-torchvision = "^0.21.0"
+torch = "^2.4.1"  # Update torch to 2.4.1 to match torchvision 0.19.1
+torchvision = "0.19.1"  # Keep torchvision at 0.19.1 for compatibility
+torch-directml = "^0.2.5.dev240914"  # Your desired version of torch-directml
 matplotlib = "^3.10.0"
 prettytable = "^3.14.0"
 pandas = "^2.2.3"
+torchaudio = {version = "*", source = "pytorch"}
 
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu121"
+secondary = true
 
 [build-system]
 requires = ["poetry-core"]

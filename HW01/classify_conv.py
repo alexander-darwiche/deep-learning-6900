@@ -60,13 +60,13 @@ class net(nn.Module):
     def __init__(self):
         super(net, self).__init__()
         # Convolutional Layers
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)  # Reduced number of filters
-        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1)  # Reduced number of filters
-        self.bn1 = nn.BatchNorm2d(16)
-        self.bn2 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, padding=1)  # Reduced number of filters
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)  # Reduced number of filters
+        self.bn1 = nn.BatchNorm2d(32)
+        self.bn2 = nn.BatchNorm2d(64)
         
         # Fully Connected Layers
-        self.fc1 = nn.Linear(8192, 1000)  # Adjust based on input image size after convolutional layers
+        self.fc1 = nn.Linear(14400, 1000)  # Adjust based on input image size after convolutional layers
         self.fc2 = nn.Linear(1000, 10)
 
         # Dropout Layers
@@ -136,7 +136,7 @@ def save_model(test_accuracy):
 
     '''
 
-    model_path = "./model/model.pt" # Where to save model and what to name it.
+    model_path = "./model/model_conv.pt" # Where to save model and what to name it.
 
     # Determine if a model already exists, save model if not
     if os.path.exists(model_path):
@@ -160,7 +160,8 @@ def load_model():
 
     '''
     model = net()
-    model.load_state_dict(torch.load("./model/model.pt")['model_state_dict'])
+    import pdb;pdb.set_trace()
+    model.load_state_dict(torch.load("./model/model_conv.pt")['model_state_dict'])
     return model
 
 
@@ -201,6 +202,12 @@ def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
     return accuracy, avg_loss
 
 
+# Intermediate Results outputs
+activations = []
+    
+def hook_fn(module, input, output):
+    activations.append(output)
+
 # This if statement dictates the interactions depending on the arugments passed to command line.
 # IF 'Train', train the model.
 # IF 'Test' or 'Predict', try to predict the command line image's class
@@ -215,9 +222,12 @@ if 'train' in sys.argv[1:]:
     # Initialize model, loss function, and optimizer, and move model to the device
     model = net().to(device)  
     loss_func = nn.CrossEntropyLoss()
+    
+    model.conv1.register_forward_hook(hook_fn)
+    model.conv2.register_forward_hook(hook_fn)
     #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
     optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
-    epochs = 10
+    epochs = 50
     
     # Create an empty dataframe for results
     results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
@@ -228,6 +238,7 @@ if 'train' in sys.argv[1:]:
         train_loss = 0
         correct = 0
         total = 0
+        
         
         for step, (input, target) in enumerate(train_loader):
             input, target = input.to(device), target.to(device)  # Move data to the device
@@ -243,31 +254,36 @@ if 'train' in sys.argv[1:]:
             total += target.size(0)
             correct += (predicted == target).sum().item()  # Count correct predictions
             
-            if step == 0:
-                # Get test accuracy and loss (ensure model is in eval mode for testing)
-                test_acc, test_loss = test_accuracy(model, test_loader, loss_func, device)
-                
-                # Compute training accuracy (after the epoch) and loss
-                train_acc = 100 * correct / total
-                avg_train_loss = train_loss / total
+        # Get test accuracy and loss (ensure model is in eval mode for testing)
+        test_acc, test_loss = test_accuracy(model, test_loader, loss_func, device)
+        
+        # Compute training accuracy (after the epoch) and loss
+        train_acc = 100 * correct / total
+        avg_train_loss = train_loss / total
 
-                # Create a new row in the results dataframe
-                new_row = pd.DataFrame([{
-                    "Epoch": epoch, 
-                    "Step": step, 
-                    "Train_Loss": round(avg_train_loss, 2),
-                    "Train_Acc": round(train_acc, 2), 
-                    "Test_Loss": round(test_loss, 2), 
-                    "Test_Acc": round(test_acc, 2)
-                }])
-                results = pd.concat([results, new_row], ignore_index=True)
+        # Create a new row in the results dataframe
+        new_row = pd.DataFrame([{
+            "Epoch": epoch, 
+            "Step": step, 
+            "Train_Loss": round(avg_train_loss, 2),
+            "Train_Acc": round(train_acc, 2), 
+            "Test_Loss": round(test_loss, 2), 
+            "Test_Acc": round(test_acc, 2)
+        }])
+        results = pd.concat([results, new_row], ignore_index=True)
 
-                # Print the results from the first step of the new epoch
-                print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1]))
+        # Print the results from the first step of the new epoch
+        print(" | ".join("{:<10}".format(str(value)) for value in results.iloc[-1]))
 
 
-                # Optionally save the model
-                save_model(test_acc)
+        # Optionally save the model
+        save_model(test_acc)
+        fig, axes = plt.subplots(1, len(activations), figsize=(10, 5))
+    for i, activation in enumerate(activations):
+        axes[i].imshow(activation[0, 0].detach().numpy(), cmap='viridis') # Display first channel of the first image in the batch
+        axes[i].set_title(f"Layer {i+1}")
+        axes[i].axis('off')
+    plt.show()
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
