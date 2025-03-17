@@ -228,7 +228,7 @@ if 'train' in sys.argv[1:]:
     # model.conv2.register_forward_hook(hook_fn)
     #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
     optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
-    epochs = 25
+    epochs = 1
     
     # Create an empty dataframe for results
     results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
@@ -268,8 +268,10 @@ if 'train' in sys.argv[1:]:
         # Get test accuracy and loss (ensure model is in eval mode for testing)
         test_acc, test_loss = test_accuracy(model, test_loader, loss_func, device)
         
+        test_accuracy_list.append(test_acc)
         # Compute training accuracy (after the epoch) and loss
         train_acc = 100 * correct / total
+        train_accuracy_list.append(train_acc)
         avg_train_loss = train_loss / total
 
         # Create a new row in the results dataframe
@@ -289,6 +291,7 @@ if 'train' in sys.argv[1:]:
 
         # Optionally save the model
         save_model(test_acc)
+
     plt.figure(figsize=(8, 5))
     plt.plot(epochs, train_accuracy_list, label='Training Accuracy', marker='o')
     plt.plot(epochs, test_accuracy_list, label='Test Accuracy', marker='s')
