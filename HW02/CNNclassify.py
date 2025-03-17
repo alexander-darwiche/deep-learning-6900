@@ -16,7 +16,7 @@ import sys
 import pandas as pd
 import random
 import numpy as np
-import torch_directml
+# import torch_directml
 
 import warnings
 warnings.filterwarnings("ignore")
