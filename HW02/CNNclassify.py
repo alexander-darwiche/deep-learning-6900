@@ -14,7 +14,8 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import sys
 import pandas as pd
-
+import random
+import numpy as np
 
 # Normalize the CIFAR10 Dataset (from Pytorch Website)
 transform = transforms.Compose([
@@ -227,11 +228,21 @@ if 'train' in sys.argv[1:]:
     # model.conv2.register_forward_hook(hook_fn)
     #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
     optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
-    epochs = 50
+    epochs = 25
     
     # Create an empty dataframe for results
     results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
     print(" | ".join("{:<10}".format(col) for col in results.columns.to_list()))
+
+    test_accuracy_list = []
+    train_accuracy_list = []
+
+    # Set the seed for reproducibility
+    seed = random.randint(1, 100)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    print("Seed used for this experiment is: ",seed)
 
     # Training loop
     for epoch in range(epochs):
@@ -278,12 +289,16 @@ if 'train' in sys.argv[1:]:
 
         # Optionally save the model
         save_model(test_acc)
-    #     fig, axes = plt.subplots(1, len(activations), figsize=(10, 5))
-    # for i, activation in enumerate(activations):
-    #     axes[i].imshow(activation[0, 0].detach().numpy(), cmap='viridis') # Display first channel of the first image in the batch
-    #     axes[i].set_title(f"Layer {i+1}")
-    #     axes[i].axis('off')
-    # plt.show()
+    plt.figure(figsize=(8, 5))
+    plt.plot(epochs, train_accuracy_list, label='Training Accuracy', marker='o')
+    plt.plot(epochs, test_accuracy_list, label='Test Accuracy', marker='s')
+
+    plt.title('Training and Test Accuracy Over Epochs')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.show()
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
