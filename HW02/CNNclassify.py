@@ -221,7 +221,7 @@ if 'train' in sys.argv[1:]:
     # import torch_directml
 
     # Set the device to DirectML
-    device = torch_directml.device()
+    # device = torch_directml.device()
     
     # Initialize model, loss function, and optimizer, and move model to the device
     model = net().to(device)  
