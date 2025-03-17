@@ -140,7 +140,6 @@ def save_model(test_accuracy):
 
     # Determine if a model already exists, save model if not
     if os.path.exists(model_path):
-        import pdb;pdb.set_trace()
         model2 = torch.load(model_path) # Load the model from the save. This isn't exactly the "load_state_dict" as I added test_accuracy to the model save
         if model2['test_accuracy'] < test_accuracy: # If the "new model" has better test accuracy, then continue
             os.remove(model_path) # Remove the old model
