@@ -16,7 +16,10 @@ import sys
 import pandas as pd
 import random
 import numpy as np
+import torch_directml
 
+import warnings
+warnings.filterwarnings("ignore")
 # Normalize the CIFAR10 Dataset (from Pytorch Website)
 transform = transforms.Compose([
         transforms.Resize((32, 32)),  # Resize image to 32x32
@@ -217,8 +220,8 @@ if 'train' in sys.argv[1:]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # import torch_directml
 
-    # # Set the device to DirectML
-    # device = torch_directml.device()
+    # Set the device to DirectML
+    device = torch_directml.device()
     
     # Initialize model, loss function, and optimizer, and move model to the device
     model = net().to(device)  
@@ -293,8 +296,8 @@ if 'train' in sys.argv[1:]:
         save_model(test_acc)
 
     plt.figure(figsize=(8, 5))
-    plt.plot(epochs, train_accuracy_list, label='Training Accuracy', marker='o')
-    plt.plot(epochs, test_accuracy_list, label='Test Accuracy', marker='s')
+    plt.plot(range(len(train_accuracy_list)), train_accuracy_list, label='Training Accuracy', marker='o')
+    plt.plot(range(len(test_accuracy_list)), test_accuracy_list, label='Test Accuracy', marker='s')
 
     plt.title('Training and Test Accuracy Over Epochs')
     plt.xlabel('Epochs')
