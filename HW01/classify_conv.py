@@ -278,12 +278,12 @@ if 'train' in sys.argv[1:]:
 
         # Optionally save the model
         save_model(test_acc)
-        fig, axes = plt.subplots(1, len(activations), figsize=(10, 5))
-    for i, activation in enumerate(activations):
-        axes[i].imshow(activation[0, 0].detach().numpy(), cmap='viridis') # Display first channel of the first image in the batch
-        axes[i].set_title(f"Layer {i+1}")
-        axes[i].axis('off')
-    plt.show()
+    #     fig, axes = plt.subplots(1, len(activations), figsize=(10, 5))
+    # for i, activation in enumerate(activations):
+    #     axes[i].imshow(activation[0, 0].detach().numpy(), cmap='viridis') # Display first channel of the first image in the batch
+    #     axes[i].set_title(f"Layer {i+1}")
+    #     axes[i].axis('off')
+    # plt.show()
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     

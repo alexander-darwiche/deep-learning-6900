@@ -140,6 +140,7 @@ def save_model(test_accuracy):
 
     # Determine if a model already exists, save model if not
     if os.path.exists(model_path):
+        import pdb;pdb.set_trace()
         model2 = torch.load(model_path) # Load the model from the save. This isn't exactly the "load_state_dict" as I added test_accuracy to the model save
         if model2['test_accuracy'] < test_accuracy: # If the "new model" has better test accuracy, then continue
             os.remove(model_path) # Remove the old model
@@ -160,6 +161,7 @@ def load_model():
 
     '''
     model = net()
+    import pdb;pdb.set_trace()
     model.load_state_dict(torch.load("./model/model.pt")['model_state_dict'])
     return model
 
@@ -277,12 +279,12 @@ if 'train' in sys.argv[1:]:
 
         # Optionally save the model
         save_model(test_acc)
-        fig, axes = plt.subplots(1, len(activations), figsize=(10, 5))
-    for i, activation in enumerate(activations):
-        axes[i].imshow(activation[0, 0].detach().numpy(), cmap='viridis') # Display first channel of the first image in the batch
-        axes[i].set_title(f"Layer {i+1}")
-        axes[i].axis('off')
-    plt.show()
+    #     fig, axes = plt.subplots(1, len(activations), figsize=(10, 5))
+    # for i, activation in enumerate(activations):
+    #     axes[i].imshow(activation[0, 0].detach().numpy(), cmap='viridis') # Display first channel of the first image in the batch
+    #     axes[i].set_title(f"Layer {i+1}")
+    #     axes[i].axis('off')
+    # plt.show()
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
