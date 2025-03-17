@@ -304,7 +304,8 @@ if 'train' in sys.argv[1:]:
     plt.ylabel('Accuracy')
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
-    plt.savefig()
+    name = "plot_" + str(seed) + '.png'
+    plt.savefig(name)
     plt.show()
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
