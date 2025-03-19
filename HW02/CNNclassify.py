@@ -178,12 +178,22 @@ def load_model():
     model.
 
     '''
-    model = net()
-    checkpoint = torch.load("./model/model.pt")['model_state_dict']
+    # Define the device (CPU or GPU)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Remove unexpected keys
+    # Load the model
+    model = net()
+
+    # Move the model to the appropriate device (CPU or GPU)
+    model.to(device)
+
+    # Load the checkpoint
+    checkpoint = torch.load("./model/model.pt", map_location=device)['model_state_dict']
+
+    # Remove unexpected keys from the checkpoint
     filtered_state_dict = {k: v for k, v in checkpoint.items() if k in model.state_dict()}
 
+    # Load the filtered state dict into the model
     model.load_state_dict(filtered_state_dict)
     return model
 
