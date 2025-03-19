@@ -480,7 +480,7 @@ elif 'speedTest' in sys.argv[1:] or 'test' in sys.argv[1:]:
     model1 = model1.to(device)
     model2 = model2.to(device)
 
-    speed1 = inference_speed_test(model)
+    speed1 = inference_speed_test(model1)
     print(f"Inference time for User Model: {speed1:.4f} seconds")   
-    speed2 = inference_speed_test(model)
+    speed2 = inference_speed_test(model2)
     print(f"Inference time for Resnet20: {speed2:.4f} seconds")   
