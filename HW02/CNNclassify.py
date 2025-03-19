@@ -60,16 +60,16 @@ test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, tr
 # Load the training data from the dataset, breaking it into batches
 test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuffle=True )
 
-from thop import profile, clever_format
+# from thop import profile, clever_format
 
-model = resnet20()
-# Example input shape for CIFAR-10 (batch size 1, 3 channels, 32x32)
-dummy_input = torch.randn(1, 3, 32, 32)
-# Profile the model
-macs, params = profile(model, inputs=(dummy_input,))
-# Format results
-macs, params = clever_format([macs, params], "%.3f")
-print(f"Resnet20: MACs: {macs}, Parameters: {params}")
+# model = resnet20()
+# # Example input shape for CIFAR-10 (batch size 1, 3 channels, 32x32)
+# dummy_input = torch.randn(1, 3, 32, 32)
+# # Profile the model
+# macs, params = profile(model, inputs=(dummy_input,))
+# # Format results
+# macs, params = clever_format([macs, params], "%.3f")
+# print(f"Resnet20: MACs: {macs}, Parameters: {params}")
 
 
 # ----------------- build the model ------------------------
