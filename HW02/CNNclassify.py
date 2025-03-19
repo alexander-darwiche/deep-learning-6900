@@ -16,7 +16,9 @@ import sys
 import pandas as pd
 import random
 import numpy as np
-# import torch_directml
+import torch_directml
+from resnet20_cifar import resnet20
+import time
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -45,6 +47,7 @@ train_data = torchvision.datasets.CIFAR10(
     download=True                                   # if you haven't had the dataset, this will automatically download it for you
 )
 
+
 # Define a batch size to set with, using 128
 batch_size = 128
 
@@ -56,6 +59,18 @@ test_data = torchvision.datasets.CIFAR10(root='./data.cifar10/', train=False, tr
 
 # Load the training data from the dataset, breaking it into batches
 test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuffle=True )
+
+from thop import profile, clever_format
+
+model = resnet20()
+# Example input shape for CIFAR-10 (batch size 1, 3 channels, 32x32)
+dummy_input = torch.randn(1, 3, 32, 32)
+# Profile the model
+macs, params = profile(model, inputs=(dummy_input,))
+# Format results
+macs, params = clever_format([macs, params], "%.3f")
+print(f"Resnet20: MACs: {macs}, Parameters: {params}")
+
 
 # ----------------- build the model ------------------------
 
@@ -164,8 +179,12 @@ def load_model():
 
     '''
     model = net()
-    import pdb;pdb.set_trace()
-    model.load_state_dict(torch.load("./model/model.pt")['model_state_dict'])
+    checkpoint = torch.load("./model/model.pt")['model_state_dict']
+
+    # Remove unexpected keys
+    filtered_state_dict = {k: v for k, v in checkpoint.items() if k in model.state_dict()}
+
+    model.load_state_dict(filtered_state_dict)
     return model
 
 
@@ -206,6 +225,42 @@ def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
     return accuracy, avg_loss
 
 
+def inference_speed_test(model):
+
+    start_time = time.time()
+    for i in range(100):
+        # Need to "normalize" the picture that is being input, ensuring its the correct size
+        # and the channels are normalized based on mean/std.
+        transform = transforms.Compose([
+            transforms.Resize((32, 32)),  # Resize image to 32x32
+            transforms.ToTensor(),        # Convert image to tensor
+            transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])  # CIFAR-10 normalization
+        ])
+
+        # Load image from file
+        image_path = sys.argv[2]  # Replace with your file path
+        image = Image.open(image_path).convert("RGB")
+
+        # Apply transformations
+        image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
+
+        # CIFAR-10 Class Labels
+        labels_map = {
+            0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer', 
+            5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
+        }
+    
+        # Run inference
+        with torch.no_grad():
+            model.eval()
+            output = model(image_tensor)
+            predicted_class = output.argmax(1).item()
+        # print(f"prediction result: {labels_map[predicted_class]}")
+
+    end_time = time.time()
+    return end_time - start_time
+    
+
 # Intermediate Results outputs
 activations = []
     
@@ -227,6 +282,14 @@ if 'train' in sys.argv[1:]:
     model = net().to(device)  
     loss_func = nn.CrossEntropyLoss()
     
+    # Example input shape for CIFAR-10 (batch size 1, 3 channels, 32x32)
+    dummy_input = torch.randn(1, 3, 32, 32)
+    # Profile the model
+    macs, params = profile(model, inputs=(dummy_input,))
+    # Format results
+    macs, params = clever_format([macs, params], "%.3f")
+    print(f"User Model: MACs: {macs}, Parameters: {params}")
+
     # model.conv1.register_forward_hook(hook_fn)
     # model.conv2.register_forward_hook(hook_fn)
     #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
@@ -310,6 +373,8 @@ if 'train' in sys.argv[1:]:
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
+    start_time = time.time()
+
     # Need to "normalize" the picture that is being input, ensuring its the correct size
     # and the channels are normalized based on mean/std.
     transform = transforms.Compose([
@@ -340,3 +405,75 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     }
 
     print(f"prediction result: {labels_map[predicted_class]}")
+
+    end_time = time.time()
+    print(f"Inference time: {end_time - start_time:.4f} seconds")
+
+elif 'resnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
+    # Check what device exists
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Initialize resnet model
+    model = resnet20()
+
+    # Load the model from memory
+    checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint)
+
+    # Initialize Loss Function
+    loss_func = nn.CrossEntropyLoss()
+    
+    # Test and Reporting Training Accuracy
+    test_acc, test_loss = test_accuracy(model, test_loader, loss_func, device)
+    print('Test Accuracy of Resnet20: ', test_acc, "%")
+
+elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
+    
+    start_time = time.time()
+
+    # Need to "normalize" the picture that is being input, ensuring its the correct size
+    # and the channels are normalized based on mean/std.
+    transform = transforms.Compose([
+        transforms.Resize((32, 32)),  # Resize image to 32x32
+        transforms.ToTensor(),        # Convert image to tensor
+        transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616])  # CIFAR-10 normalization
+    ])
+
+    # Load image from file
+    image_path = sys.argv[2]  # Replace with your file path
+    image = Image.open(image_path).convert("RGB")
+
+    # Apply transformations
+    image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
+
+    model = resnet20()
+    checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint)
+
+    # Run inference
+    with torch.no_grad():
+        model.eval()
+        output = model(image_tensor)
+        predicted_class = output.argmax(1).item()
+
+    # CIFAR-10 Class Labels
+    labels_map = {
+        0: 'airplane', 1: 'automobile', 2: 'bird', 3: 'cat', 4: 'deer', 
+        5: 'dog', 6: 'frog', 7: 'horse', 8: 'ship', 9: 'truck'
+    }
+
+    print(f"prediction result: {labels_map[predicted_class]}")
+    
+    end_time = time.time()
+    print(f"Inference time: {end_time - start_time:.4f} seconds")
+
+elif 'speedTest' in sys.argv[1:] or 'test' in sys.argv[1:]:
+    model1 = net()
+    model1 = load_model()
+    model2 = resnet20()
+    model2.load_state_dict(torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu')))
+    
+    speed1 = inference_speed_test(model)
+    print(f"Inference time for User Model: {speed1:.4f} seconds")   
+    speed2 = inference_speed_test(model)
+    print(f"Inference time for Resnet20: {speed2:.4f} seconds")   

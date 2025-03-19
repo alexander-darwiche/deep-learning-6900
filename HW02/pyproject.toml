@@ -6,7 +6,7 @@ authors = ["alex darwiche <59787022+alexander-darwiche@users.noreply.github.com>
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 torch = "^2.4.1"  # Update torch to 2.4.1 to match torchvision 0.19.1
 torchvision = "0.19.1"  # Keep torchvision at 0.19.1 for compatibility
 torch-directml = "^0.2.5.dev240914"  # Your desired version of torch-directml
@@ -14,6 +14,8 @@ matplotlib = "^3.10.0"
 prettytable = "^3.14.0"
 pandas = "^2.2.3"
 torchaudio = {version = "*", source = "pytorch"}
+thop = "^0.1.1.post2209072238"
+ultralytics-thop = "^2.0.14"
 
 [[tool.poetry.source]]
 name = "pytorch"
