@@ -228,7 +228,7 @@ def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
 def inference_speed_test(model):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     start_time = time.time()
     for i in range(1000):
         # Need to "normalize" the picture that is being input, ensuring its the correct size
@@ -375,6 +375,53 @@ if 'train' in sys.argv[1:]:
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
+    def visualize_activation(model, input_image, layer_name):
+        # Hook to capture the activations
+        activation_map = []
+
+        def hook_fn(module, input, output):
+            activation_map.append(output.detach())
+
+        # Register hook to the layer
+        layer = dict([*model.named_modules()])[layer_name]
+        hook = layer.register_forward_hook(hook_fn)
+
+        # Perform inference
+        with torch.no_grad():
+            model.eval()
+            output = model(input_image)
+
+        # Remove hook to avoid memory leaks
+        hook.remove()
+
+        # Extract the activations (this is the output from the chosen layer)
+        activation = activation_map[0][0]  # Shape: [batch_size, channels, height, width]
+
+        # Number of channels
+        num_channels = activation.size(0)
+
+        # Calculate grid size (smallest square grid that fits all channels)
+        grid_size = int(np.ceil(np.sqrt(num_channels)))  # Grid size is the ceiling of sqrt(num_channels)
+
+        # Create the plot with enough subplots
+        fig, axes = plt.subplots(6, 6, figsize=(5, 5))
+
+        # Flatten the axes array for easier indexing
+        axes = axes.flatten()
+
+        # Plot each channel in the grid
+        for i in range(32):
+            axes[i].imshow(activation[i].cpu().numpy(), cmap='viridis')
+            axes[i].axis('off')
+
+        # Hide any empty subplots if the grid size exceeds the number of channels
+        for i in range(32, len(axes)):
+            axes[i].axis('off')
+        
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=.1, hspace=.1)
+        plt.savefig('CONV_rslt.png')
+        plt.show()
+
     # Need to "normalize" the picture that is being input, ensuring its the correct size
     # and the channels are normalized based on mean/std.
     transform = transforms.Compose([
@@ -390,7 +437,11 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     # Apply transformations
     image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
 
+    
     model = load_model()
+
+    # Visualize activations during inference (e.g., for the first convolutional layer "conv1")
+    visualize_activation(model, image_tensor, "conv1")
 
     # Run inference
     with torch.no_grad():
