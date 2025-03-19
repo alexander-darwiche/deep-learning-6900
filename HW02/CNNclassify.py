@@ -436,10 +436,11 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     image_path = sys.argv[2]  # Replace with your file path
     image = Image.open(image_path).convert("RGB")
 
-    # Apply transformations
-    image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Apply transformations
+    image_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension (1, 3, 32, 32)
+
     model = load_model()
     model = model.to(device)
 
@@ -491,14 +492,14 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     # Load image from file
     image_path = sys.argv[2]  # Replace with your file path
     image = Image.open(image_path).convert("RGB")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Apply transformations
-    image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
+    image_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension (1, 3, 32, 32)
 
     model = resnet20()
     checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Run inference
     with torch.no_grad():
         model.eval()
