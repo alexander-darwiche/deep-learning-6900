@@ -16,7 +16,7 @@ import sys
 import pandas as pd
 import random
 import numpy as np
-import torch_directml
+# import torch_directml
 from resnet20_cifar import resnet20
 import time
 
@@ -282,13 +282,13 @@ if 'train' in sys.argv[1:]:
     model = net().to(device)  
     loss_func = nn.CrossEntropyLoss()
     
-    # Example input shape for CIFAR-10 (batch size 1, 3 channels, 32x32)
-    dummy_input = torch.randn(1, 3, 32, 32)
-    # Profile the model
-    macs, params = profile(model, inputs=(dummy_input,))
-    # Format results
-    macs, params = clever_format([macs, params], "%.3f")
-    print(f"User Model: MACs: {macs}, Parameters: {params}")
+    # # Example input shape for CIFAR-10 (batch size 1, 3 channels, 32x32)
+    # dummy_input = torch.randn(1, 3, 32, 32)
+    # # Profile the model
+    # macs, params = profile(model, inputs=(dummy_input,))
+    # # Format results
+    # macs, params = clever_format([macs, params], "%.3f")
+    # print(f"User Model: MACs: {macs}, Parameters: {params}")
 
     # model.conv1.register_forward_hook(hook_fn)
     # model.conv2.register_forward_hook(hook_fn)
@@ -468,11 +468,18 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     print(f"Inference time: {end_time - start_time:.4f} seconds")
 
 elif 'speedTest' in sys.argv[1:] or 'test' in sys.argv[1:]:
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     model1 = net()
     model1 = load_model()
     model2 = resnet20()
     model2.load_state_dict(torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu')))
     
+    # Move to GPU
+    model1 = model1.to(device)
+    model2 = model2.to(device)
+
     speed1 = inference_speed_test(model)
     print(f"Inference time for User Model: {speed1:.4f} seconds")   
     speed2 = inference_speed_test(model)
