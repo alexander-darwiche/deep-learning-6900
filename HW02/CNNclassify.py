@@ -108,7 +108,7 @@ class net(nn.Module):
         return x
 
 # ------ maybe some helper functions -----------
-def test_accuracy(model, test_loader, loss_func, device='cpu'):
+def test_accuracy(model, test_loader, loss_func, device):
     '''
     This function will return the accuracy of the model
     on the testing data.
@@ -122,6 +122,7 @@ def test_accuracy(model, test_loader, loss_func, device='cpu'):
     Returns:
         Tuple: (test accuracy %, test loss)
     '''
+    model.to(device)
     model.eval()  # Switch the model to evaluation mode
     correct = 0
     total = 0
