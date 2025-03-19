@@ -160,7 +160,8 @@ def save_model(test_accuracy):
 
     # Determine if a model already exists, save model if not
     if os.path.exists(model_path):
-        model2 = torch.load(model_path) # Load the model from the save. This isn't exactly the "load_state_dict" as I added test_accuracy to the model save
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model2 = torch.load(model_path, map_location=device)
         if model2['test_accuracy'] < test_accuracy: # If the "new model" has better test accuracy, then continue
             os.remove(model_path) # Remove the old model
             torch.save({ # save the new model parameters AND its test accuracy
@@ -179,15 +180,17 @@ def load_model():
     model.
 
     '''
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = net()
-    checkpoint = torch.load("./model/model.pt")['model_state_dict']
-
+    model.to(device)
+    checkpoint = torch.load("./model/model.pt", map_location=device)['model_state_dict']
+    
     # Remove unexpected keys
     filtered_state_dict = {k: v for k, v in checkpoint.items() if k in model.state_dict()}
 
     model.load_state_dict(filtered_state_dict)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    
+    
     return model
 
 
@@ -469,8 +472,9 @@ elif 'resnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     # Initialize resnet model
     model = resnet20()
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     # Load the model from memory
-    checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
+    checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=device)
     model.load_state_dict(checkpoint)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Initialize Loss Function
@@ -499,7 +503,8 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     image_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension (1, 3, 32, 32)
 
     model = resnet20()
-    checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=device)
     model.load_state_dict(checkpoint)
     model.to(device)
     # Run inference
@@ -518,11 +523,12 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
 
 elif 'speedTest' in sys.argv[1:] or 'test' in sys.argv[1:]:
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
 
     model1 = net()
     model1 = load_model()
     model2 = resnet20()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model2.load_state_dict(torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=device))
     
     # Move to GPU
