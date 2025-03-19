@@ -185,6 +185,8 @@ def load_model():
     filtered_state_dict = {k: v for k, v in checkpoint.items() if k in model.state_dict()}
 
     model.load_state_dict(filtered_state_dict)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
     return model
 
 
@@ -437,8 +439,9 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     # Apply transformations
     image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
 
-    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model()
+    model = model.to(device)
 
     # Visualize activations during inference (e.g., for the first convolutional layer "conv1")
     visualize_activation(model, image_tensor, "conv1")
@@ -467,7 +470,7 @@ elif 'resnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     # Load the model from memory
     checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint)
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Initialize Loss Function
     loss_func = nn.CrossEntropyLoss()
     
@@ -495,7 +498,7 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     model = resnet20()
     checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint)
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Run inference
     with torch.no_grad():
         model.eval()
