@@ -227,6 +227,8 @@ def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
 
 def inference_speed_test(model):
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     start_time = time.time()
     for i in range(1000):
         # Need to "normalize" the picture that is being input, ensuring its the correct size
@@ -238,11 +240,11 @@ def inference_speed_test(model):
         ])
 
         # Load image from file
-        image_path = sys.argv[2]  # Replace with your file path
+        image_path = sys.argv[2]
         image = Image.open(image_path).convert("RGB")
 
         # Apply transformations
-        image_tensor = transform(image).unsqueeze(0)  # Add batch dimension (1, 3, 32, 32)
+        image_tensor = transform(image).unsqueeze(0).to(device)
 
         # CIFAR-10 Class Labels
         labels_map = {
@@ -373,8 +375,6 @@ if 'train' in sys.argv[1:]:
 
 elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
-    start_time = time.time()
-
     # Need to "normalize" the picture that is being input, ensuring its the correct size
     # and the channels are normalized based on mean/std.
     transform = transforms.Compose([
@@ -406,9 +406,6 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
 
     print(f"prediction result: {labels_map[predicted_class]}")
 
-    end_time = time.time()
-    print(f"Inference time: {end_time - start_time:.4f} seconds")
-
 elif 'resnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     # Check what device exists
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -429,8 +426,6 @@ elif 'resnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
 
 elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
-    start_time = time.time()
-
     # Need to "normalize" the picture that is being input, ensuring its the correct size
     # and the channels are normalized based on mean/std.
     transform = transforms.Compose([
@@ -463,9 +458,6 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     }
 
     print(f"prediction result: {labels_map[predicted_class]}")
-    
-    end_time = time.time()
-    print(f"Inference time: {end_time - start_time:.4f} seconds")
 
 elif 'speedTest' in sys.argv[1:] or 'test' in sys.argv[1:]:
 
