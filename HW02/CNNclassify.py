@@ -501,6 +501,7 @@ elif 'predictResnet20' in sys.argv[1:] or 'test' in sys.argv[1:]:
     model = resnet20()
     checkpoint = torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint)
+    model.to(device)
     # Run inference
     with torch.no_grad():
         model.eval()
