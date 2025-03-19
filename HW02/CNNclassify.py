@@ -228,7 +228,7 @@ def compute_train_accuracy(model, train_loader, loss_func, device='cpu'):
 def inference_speed_test(model):
 
     start_time = time.time()
-    for i in range(100):
+    for i in range(1000):
         # Need to "normalize" the picture that is being input, ensuring its the correct size
         # and the channels are normalized based on mean/std.
         transform = transforms.Compose([
