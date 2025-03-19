@@ -474,7 +474,7 @@ elif 'speedTest' in sys.argv[1:] or 'test' in sys.argv[1:]:
     model1 = net()
     model1 = load_model()
     model2 = resnet20()
-    model2.load_state_dict(torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=torch.device('cpu')))
+    model2.load_state_dict(torch.load("./model/resnet20_cifar10_pretrained.pt", map_location=device))
     
     # Move to GPU
     model1 = model1.to(device)
