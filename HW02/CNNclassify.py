@@ -85,8 +85,9 @@ class net(nn.Module):
         self.bn2 = nn.BatchNorm2d(64)
         
         # Fully Connected Layers
-        self.fc1 = nn.Linear(12544, 1000)  # Adjust based on input image size after convolutional layers
-        self.fc2 = nn.Linear(1000, 10)
+        self.fc1 = nn.Linear(12544, 5000)  # Adjust based on input image size after convolutional layers
+        self.fc2 = nn.Linear(5000, 1000)
+        self.fc3 = nn.Linear(1000, 10)
 
         # Dropout Layers
         self.dropout = nn.Dropout(p=0.1)  # Randomly drop 50% of the neurons
@@ -103,8 +104,9 @@ class net(nn.Module):
         # Fully Connected Layers with Batch Normalization, ReLU, and Dropout
         x = F.relu(self.fc1(x))
         x = self.dropout(x)  # Apply dropout
-        x = self.fc2(x)  # Final output layer (no activation here, typically for classification)
-        
+        x = self.fc2(x)  
+        x = self.fc3(x) # Final output layer (no activation here, typically for classification)
+
         return x
 
 # ------ maybe some helper functions -----------
