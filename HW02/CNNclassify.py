@@ -75,38 +75,58 @@ test_loader = Data.DataLoader(dataset=test_data,  batch_size = batch_size, shuff
 # ----------------- build the model ------------------------
 
 # Define a Deep Nueral Network with only Fully Connected Layers or Batch Normalization
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class net(nn.Module):
-    def __init__(self):
-        super(net, self).__init__()
-        # Convolutional Layers
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=5, padding=0, stride=1)  # Reduced number of filters
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1)  # Reduced number of filters
-        self.bn1 = nn.BatchNorm2d(32)
-        self.bn2 = nn.BatchNorm2d(64)
+    def __init__(self, num_classes=10):
+        super().__init__()
         
-        # Fully Connected Layers
-        self.fc1 = nn.Linear(12544, 5000)  # Adjust based on input image size after convolutional layers
-        self.fc2 = nn.Linear(5000, 1000)
-        self.fc3 = nn.Linear(1000, 10)
-
-        # Dropout Layers
-        self.dropout = nn.Dropout(p=0.1)  # Randomly drop 50% of the neurons
-
+        self.features = nn.Sequential(
+            # Block 1: first conv with kernel 5, stride 1, no padding
+            nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=0),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),  # 28x28 -> 14x14
+            
+            # Block 2
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),  # 14x14 -> 7x7
+            
+            # Block 3
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),  # 7x7 -> 3x3
+            
+            # Block 4
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.AdaptiveAvgPool2d(1)  # 3x3 -> 1x1
+        )
+        
+        self.classifier = nn.Linear(512, num_classes)
+        
     def forward(self, x):
-        # Convolutional Layers with Batch Normalization and ReLU activation
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.max_pool2d(x, 2)  # Add max-pooling after convolutions to reduce spatial size
-        
-        # Flatten before passing to fully connected layers
-        x = torch.flatten(x, 1)  # Flatten the output from conv layers into a vector
-
-        # Fully Connected Layers with Batch Normalization, ReLU, and Dropout
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)  # Apply dropout
-        x = self.fc2(x)  
-        x = self.fc3(x) # Final output layer (no activation here, typically for classification)
-
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
         return x
 
 # ------ maybe some helper functions -----------
