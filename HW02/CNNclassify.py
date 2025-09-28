@@ -325,7 +325,7 @@ if 'train' in sys.argv[1:]:
     # model.conv2.register_forward_hook(hook_fn)
     #optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.01)
     optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
-    epochs = 25
+    epochs = 200
     
     # Create an empty dataframe for results
     results = pd.DataFrame({"Epoch": [], "Step": [], "Train_Loss": [], "Train_Acc": [], "Test_Loss": [], "Test_Acc": []})
