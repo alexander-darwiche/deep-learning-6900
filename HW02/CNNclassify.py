@@ -100,11 +100,10 @@ class net(nn.Module):
             nn.Conv2d(128, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),  # 14x14 -> 7x7
-            
+            nn.AdaptiveAvgPool2d(1)  # 3x3 -> 1x1
         )
         
-        self.classifier = nn.Linear(128, num_classes)
+        self.classifier = nn.Linear(512, num_classes)
         
     def forward(self, x):
         x = self.features(x)
