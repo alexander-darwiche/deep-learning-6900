@@ -363,8 +363,8 @@ if 'train' in sys.argv[1:]:
             z_list = [torch.randn_like(p) for p in model.parameters() if p.requires_grad]
             base_params = [p.clone() for p in model.parameters() if p.requires_grad]
 
-            mu = 0.001  # Perturbation magnitude
-            lr = 0.001  # Learning rate
+            mu = 0.01  # Perturbation magnitude
+            lr = 0.01  # Learning rate
             # f(theta + mu z)
             with torch.no_grad():
                 for p, bp, z in zip(model.parameters(), base_params, z_list):
