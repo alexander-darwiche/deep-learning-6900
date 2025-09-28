@@ -102,26 +102,9 @@ class net(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),  # 14x14 -> 7x7
             
-            # Block 3
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),  # 7x7 -> 3x3
-            
-            # Block 4
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d(1)  # 3x3 -> 1x1
         )
         
-        self.classifier = nn.Linear(512, num_classes)
+        self.classifier = nn.Linear(128, num_classes)
         
     def forward(self, x):
         x = self.features(x)
