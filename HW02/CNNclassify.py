@@ -103,7 +103,7 @@ class net(nn.Module):
             nn.AdaptiveAvgPool2d(1)  # 3x3 -> 1x1
         )
         
-        self.classifier = nn.Linear(512, num_classes)
+        self.classifier = nn.Linear(128, num_classes)
         
     def forward(self, x):
         x = self.features(x)
