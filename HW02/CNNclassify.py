@@ -297,6 +297,7 @@ activations = []
 def hook_fn(module, input, output):
     activations.append(output)
 
+
 # This if statement dictates the interactions depending on the arugments passed to command line.
 # IF 'Train', train the model.
 # IF 'Test' or 'Predict', try to predict the command line image's class
@@ -338,6 +339,12 @@ if 'train' in sys.argv[1:]:
     torch.manual_seed(seed)
     np.random.seed(seed)
 
+    named_parameters_to_optim = []
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            named_parameters_to_optim.append((name, param))
+
+
     print("Seed used for this experiment is: ",seed)
 
     # Training loop
@@ -351,10 +358,45 @@ if 'train' in sys.argv[1:]:
             input, target = input.to(device), target.to(device)  # Move data to the device
             model.train()  # Set model in training mode
             optimizer.zero_grad()  # Reset gradients
+
+            # Sample perturbation z
+            z_list = [torch.randn_like(p) for p in model.parameters() if p.requires_grad]
+            base_params = [p.clone() for p in model.parameters() if p.requires_grad]
+
+            mu = 0.001  # Perturbation magnitude
+            lr = 0.001  # Learning rate
+            # f(theta + mu z)
+            with torch.no_grad():
+                for p, bp, z in zip(model.parameters(), base_params, z_list):
+                    if p.requires_grad:
+                        p.copy_(bp + mu * z)
+            loss1 = loss_func(model(input), target)
+
+            # f(theta - mu z)
+            with torch.no_grad():
+                for p, bp, z in zip(model.parameters(), base_params, z_list):
+                    if p.requires_grad:
+                        p.copy_(bp - mu * z)
+            loss2 = loss_func(model(input), target)
+
+
+            # Gradient estimate along z
+            grad_scalar = (loss1.item() - loss2.item()) / (2 * mu)
+
+            # Restore params
+            with torch.no_grad():
+                for p, bp in zip(model.parameters(), base_params):
+                    if p.requires_grad:
+                        p.copy_(bp)
+
+            # Parameter update: theta = theta - lr * grad_scalar * z
+            with torch.no_grad():
+                for p, z in zip(model.parameters(), z_list):
+                    if p.requires_grad:
+                        p.add_(-lr * grad_scalar * z)
+
             output = model(input)  # Forward pass
             loss = loss_func(output, target)  # Compute loss
-            loss.backward()  # Backpropagate gradients
-            optimizer.step()  # Update weights
             
             train_loss += loss.item() * target.size(0)  # Accumulate weighted loss
             _, predicted = output.max(1)  # Get predicted class
