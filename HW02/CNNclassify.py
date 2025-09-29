@@ -188,7 +188,6 @@ def load_model():
     model = net()
     model.to(device)
     checkpoint = torch.load("./model/model.pt", map_location=device)['model_state_dict']
-    import pdb;pdb.set_trace()
     # Remove unexpected keys
     filtered_state_dict = {k: v for k, v in checkpoint.items() if k in model.state_dict()}
 
@@ -443,6 +442,7 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    import pdb;pdb.set_trace()
     # Apply transformations
     image_tensor = transform(image).unsqueeze(0).to(device)  # Add batch dimension (1, 3, 32, 32)
 
