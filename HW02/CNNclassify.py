@@ -85,10 +85,10 @@ class net(nn.Module):
         
         self.features = nn.Sequential(
             # Block 1: first conv with kernel 5, stride 1, no padding
-            nn.Conv2d(3, 64, kernel_size=5, stride=1, padding=0),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=0),
+            nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),  # 28x28 -> 14x14
@@ -454,7 +454,7 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     model = model.to(device)
 
     # Visualize activations during inference (e.g., for the first convolutional layer "conv1")
-    visualize_activation(model, image_tensor, "conv1")
+    visualize_activation(model, image_tensor, "features")
 
     # Run inference
     with torch.no_grad():
