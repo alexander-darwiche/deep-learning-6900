@@ -392,6 +392,7 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
         def hook_fn(module, input, output):
             activation_map.append(output.detach())
 
+        import pdb;pdb.set_trace()
         # Register hook to the layer
         layer = dict([*model.named_modules()])[layer_name]
         hook = layer.register_forward_hook(hook_fn)
