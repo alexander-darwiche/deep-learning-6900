@@ -153,7 +153,7 @@ def test_accuracy(model, test_loader, loss_func, device):
 
 
 
-def save_model(test_accuracy):
+def save_model(model, test_accuracy):
     '''
     This function will save the model in the event that it exceeds
     a previous model's test accuracy, or if a model does not exist.
@@ -367,7 +367,7 @@ if 'train' in sys.argv[1:]:
 
 
         # Optionally save the model
-        save_model(test_acc)
+        save_model(model, test_acc)
 
     plt.figure(figsize=(8, 5))
     plt.plot(range(len(train_accuracy_list)), train_accuracy_list, label='Training Accuracy', marker='o')
