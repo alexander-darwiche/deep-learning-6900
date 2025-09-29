@@ -188,7 +188,7 @@ def load_model():
     model = net()
     model.to(device)
     checkpoint = torch.load("./model/model.pt", map_location=device)['model_state_dict']
-    
+    import pdb;pdb.set_trace()
     # Remove unexpected keys
     filtered_state_dict = {k: v for k, v in checkpoint.items() if k in model.state_dict()}
 
@@ -393,7 +393,6 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
             nonlocal conv1_out
             conv1_out = output
 
-        import pdb;pdb.set_trace()
         # Register hook to the layer
         model.features[0].register_forward_hook(hook_fn)
 
