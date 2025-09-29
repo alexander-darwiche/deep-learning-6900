@@ -387,26 +387,23 @@ elif 'predict' in sys.argv[1:] or 'test' in sys.argv[1:]:
     
     def visualize_activation(model, input_image, layer_name):
         # Hook to capture the activations
-        activation_map = []
+        conv1_out = None
 
         def hook_fn(module, input, output):
-            activation_map.append(output.detach())
+            nonlocal conv1_out
+            conv1_out = output
 
         import pdb;pdb.set_trace()
         # Register hook to the layer
-        layer = dict([*model.named_modules()])[layer_name]
-        hook = layer.register_forward_hook(hook_fn)
+        model.features[0].register_forward_hook(hook_fn)
 
         # Perform inference
         with torch.no_grad():
             model.eval()
             output = model(input_image)
 
-        # Remove hook to avoid memory leaks
-        hook.remove()
-
         # Extract the activations (this is the output from the chosen layer)
-        activation = activation_map[0][0]  # Shape: [batch_size, channels, height, width]
+        activation = conv1_out.squeeze(0) 
 
         # Number of channels
         num_channels = activation.size(0)
